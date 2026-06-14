@@ -1,18 +1,41 @@
-# Tatami
+# tatami.koplugin
 
-> **Status: stub — not yet implemented**
+A Tatami puzzle plugin for [KOReader](https://github.com/koreader/koreader).
 
-## Description
+## Screenshot
 
-Fill the grid with 1×2 dominoes so no two dominoes of the same orientation are adjacent and every 2×2 square is covered.
+*(Screenshot to be added.)*
 
-## Files to create
+## Rules
 
-- `board.lua` — game logic, puzzle generator, serialize/load
-- `board_widget.lua` — grid rendering and tap gestures
-- `screen.lua` — full-screen layout (buttons + board)
-- `main.lua` — PluginBase entry point
+Fill the grid with numbers 1–N (no repeats in rows or columns). The grid is divided into dominoes; identical numbers may not appear in the same domino. Dominoes of the same orientation may not be directly adjacent (like real tatami mats).
 
-## Notes
+## Features
 
-Grid-based logic puzzle — use GridWidgetBase from game-common.
+- **Multiple grid sizes**
+- **Three difficulty levels** — Easy, Medium, Hard
+- **Domino highlighting** — outlines show domino boundaries
+- **Check** — validates row/column and domino constraints
+- **Auto-save** — puzzle state saved and restored on next launch
+
+## Installation
+
+1. Download `tatami.koplugin.zip` from the [latest release](../../releases/latest).
+2. Extract into the `plugins/` folder of your KOReader data directory.
+3. Restart KOReader.
+4. Open the menu → **Tools** → **Tatami**.
+
+## Controls
+
+| Action | How |
+|--------|-----|
+| Select a cell | Tap it |
+| Enter a number | Tap the digit button |
+| Erase a cell | Tap **Erase** |
+| Check progress | Tap **Check** |
+| New puzzle | Tap **New** |
+| Show rules | Tap **Rules** |
+
+## License
+
+GPL-3.0 — see [LICENSE](LICENSE).

@@ -26,6 +26,32 @@ local TatamiBoardWidget   = lrequire("board_widget")
 
 local DeviceScreen = Device.screen
 
+local GAME_RULES_EN = _([[
+Tatami — Rules
+
+Fill the grid with numbers so that every row and every column contains each number from 1 to N exactly once.
+
+Domino rule:
+• The grid is divided into 1×2 and 1×3 dominoes.
+• Each domino may not contain two identical numbers.
+• No two dominoes of the same size and orientation may be directly adjacent (like tatami mats — they must not form a "T" or "+" joint in the same direction).
+
+Given numbers are fixed clues. Tap a cell and select a digit to fill it in.
+]])
+
+local GAME_RULES_FR = [[
+Tatami — Règles
+
+Remplissez la grille avec les chiffres de 1 à N de sorte que chaque ligne et chaque colonne contienne chaque chiffre exactement une fois.
+
+Règle des dominos :
+• La grille est divisée en dominos de 1×2 et 1×3.
+• Un domino ne peut pas contenir deux chiffres identiques.
+• Deux dominos de même taille et même orientation ne peuvent pas être directement adjacents (comme de vraies nattes tatami — ils ne doivent pas former un joint en "T" ou "+" dans la même direction).
+
+Les chiffres donnés sont des indices fixes. Appuyez sur une case et choisissez un chiffre pour le placer.
+]]
+
 local TatamiScreen = ScreenBase:extend{}
 
 function TatamiScreen:init()
@@ -72,6 +98,7 @@ function TatamiScreen:buildLayout()
               callback = function() self:openSizeMenu() end },
             { id = "diff_button",   text = self:getDiffButtonText(),
               callback = function() self:openDifficultyMenu() end },
+            self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
             self:makeCloseButtonConfig(),
         }},
     }
