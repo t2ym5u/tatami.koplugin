@@ -8,14 +8,13 @@ A Tatami puzzle plugin for [KOReader](https://github.com/koreader/koreader).
 
 ## Rules
 
-Fill the grid with numbers 1–N (no repeats in rows or columns). The grid is divided into dominoes; identical numbers may not appear in the same domino. Dominoes of the same orientation may not be directly adjacent (like real tatami mats).
+Pair up every cell with an adjacent cell to form dominoes covering the whole grid, so that no four dominoes meet corner-to-corner at a single point — the traditional bad-luck "cross" arrangement real tatami mat flooring avoids. Some dominoes are given as starting clues.
 
 ## Features
 
-- **Multiple grid sizes**
+- **Two grid sizes** — 4×4 and 6×6
 - **Three difficulty levels** — Easy, Medium, Hard
 - **Domino highlighting** — outlines show domino boundaries
-- **Check** — validates row/column and domino constraints
 - **Auto-save** — puzzle state saved and restored on next launch
 
 ## Installation
@@ -30,11 +29,11 @@ Fill the grid with numbers 1–N (no repeats in rows or columns). The grid is di
 | Action | How |
 |--------|-----|
 | Select a cell | Tap it |
-| Enter a number | Tap the digit button |
-| Erase a cell | Tap **Erase** |
-| Check progress | Tap **Check** |
-| New puzzle | Tap **New** |
-| Show rules | Tap **Rules** |
+| Connect/disconnect with a neighbour | Tap an adjacent cell |
+| Undo | Tap **Undo** |
+| Clear your progress | Tap **Clear** |
+| Reveal the solution | Tap **Reveal** |
+| New puzzle | Tap **New game** |
 
 ## License
 
