@@ -15,154 +15,89 @@ local DEFAULT_N = 4
 -- Domino tiling generation
 -- ---------------------------------------------------------------------------
 
--- Returns true if the 2x2 block at (r,c) has uniform orientation (all H or all V)
--- orientation: 0=none, 1=horizontal pair, 2=vertical pair
-local function get2x2Violation(pairs, r, c, n)
-    if r + 1 > n or c + 1 > n then return false end
-    -- Check if all four cells in the 2x2 are in horizontal dominoes or all vertical
-    local function isHoriz(pr, pc)
-        local p = pairs[pr][pc]
-        return p and p[1] == pr and p[2] == pc + 1
-    end
-    local function isVert(pr, pc)
-        local p = pairs[pr][pc]
-        return p and p[1] == pr + 1 and p[2] == pc
-    end
-    -- A 2x2 violation: all horizontal (TL-TR and BL-BR) or all vertical (TL-BL and TR-BR)
-    if isHoriz(r, c) and isHoriz(r + 1, c) and
-       pairs[r][c + 1] and pairs[r][c + 1][1] == r and pairs[r][c + 1][2] == c and
-       pairs[r + 1][c + 1] and pairs[r + 1][c + 1][1] == r + 1 and pairs[r + 1][c + 1][2] == c then
-        -- TL→TR and BL→BR: all horizontal in 2x2
-        return true
-    end
-    if isVert(r, c) and isVert(r, c + 1) and
-       pairs[r + 1][c] and pairs[r + 1][c][1] == r and pairs[r + 1][c][2] == c and
-       pairs[r + 1][c + 1] and pairs[r + 1][c + 1][1] == r and pairs[r + 1][c + 1][2] == c + 1 then
-        -- TL→BL and TR→BR: all vertical in 2x2
-        return true
-    end
-    return false
-end
-
-local function countViolations(pairs, n)
+-- A domino tiling has a "tatami cross" violation at the interior point
+-- shared by cells (r,c),(r,c+1),(r+1,c),(r+1,c+1) when all four of those
+-- cells' dominoes extend *outside* that 2x2 block -- i.e. four distinct
+-- tiles meet corner-to-corner at one point, the traditional bad-luck
+-- tatami-mat arrangement. (The previous implementation instead forbade a
+-- 2x2 block being covered by two parallel same-orientation dominoes, which
+-- is a different -- and, per an exhaustive check, mathematically
+-- unsatisfiable -- constraint: every one of the 36 domino tilings of a 4x4
+-- grid, and all 6728 tilings of a 6x6 grid, violated it at least once. That
+-- meant this plugin could never generate anything but its hardcoded
+-- fallback board, on either supported size, ever.)
+local function countCrossViolations(pairs, n)
     local count = 0
     for r = 1, n - 1 do
         for c = 1, n - 1 do
-            -- Check if all 4 cells in the 2x2 have same orientation
-            local tl = pairs[r][c]
-            local tr = pairs[r][c + 1]
-            local bl = pairs[r + 1][c]
-            local br = pairs[r + 1][c + 1]
-            if tl and tr and bl and br then
-                -- All horizontal: TL-TR and BL-BR
-                local tl_right = tl[1] == r   and tl[2] == c + 1
-                local tr_left  = tr[1] == r   and tr[2] == c
-                local bl_right = bl[1] == r+1 and bl[2] == c + 1
-                local br_left  = br[1] == r+1 and br[2] == c
-                if tl_right and tr_left and bl_right and br_left then
-                    count = count + 1
-                end
-                -- All vertical: TL-BL and TR-BR
-                local tl_down  = tl[1] == r+1 and tl[2] == c
-                local bl_up    = bl[1] == r   and bl[2] == c
-                local tr_down  = tr[1] == r+1 and tr[2] == c + 1
-                local br_up    = br[1] == r   and br[2] == c + 1
-                if tl_down and bl_up and tr_down and br_up then
-                    count = count + 1
-                end
+            local tl, tr = pairs[r][c], pairs[r][c + 1]
+            local bl, br = pairs[r + 1][c], pairs[r + 1][c + 1]
+            local tl_inside = (tl[1] == r and tl[2] == c + 1) or (tl[1] == r + 1 and tl[2] == c)
+            local tr_inside = (tr[1] == r and tr[2] == c) or (tr[1] == r + 1 and tr[2] == c + 1)
+            local bl_inside = (bl[1] == r and bl[2] == c) or (bl[1] == r + 1 and bl[2] == c + 1)
+            local br_inside = (br[1] == r and br[2] == c + 1) or (br[1] == r + 1 and br[2] == c)
+            if not tl_inside and not tr_inside and not bl_inside and not br_inside then
+                count = count + 1
             end
         end
     end
     return count
 end
 
--- Generate a valid domino tiling for n×n grid with no 2×2 same-orientation blocks
--- pairs[r][c] = {partner_r, partner_c}
-local function generateTiling(n)
-    local MAX_ATTEMPTS = 50
-    for attempt = 1, MAX_ATTEMPTS do
-        local pairs   = {}
-        local used    = emptyGrid(n, n, false)
-        for r = 1, n do pairs[r] = {} end
+-- ---------------------------------------------------------------------------
+-- Generator
+-- ---------------------------------------------------------------------------
 
-        -- Build list of cells in random order
-        local cells = {}
-        for r = 1, n do
-            for c = 1, n do cells[#cells + 1] = {r, c} end
+-- Recursively tile an n x n block (n even) starting at (r0,c0) with a
+-- "pinwheel" domino pattern that is always cross-violation-free: tile the
+-- outer 1-cell-thick frame (long sides get pairs running along the frame,
+-- short sides get a single pair closing each corner), then recurse into the
+-- (n-2)x(n-2) core with the *same* orientation. Exhaustive search over all
+-- 36 (n=4) and 6728 (n=6) domino tilings found exactly 2 valid tilings for
+-- each size -- this construction and its `horiz=false` transpose are
+-- exactly those 2 -- so there is no retry/failure case to handle here; this
+-- always succeeds by construction.
+local function fillPinwheel(pairs, r0, c0, size, horiz)
+    if size <= 0 then return end
+    if size == 2 then
+        if horiz then
+            pairs[r0][c0]         = { r0, c0 + 1 };     pairs[r0][c0 + 1]         = { r0, c0 }
+            pairs[r0 + 1][c0]     = { r0 + 1, c0 + 1 };  pairs[r0 + 1][c0 + 1]     = { r0 + 1, c0 }
+        else
+            pairs[r0][c0]         = { r0 + 1, c0 };      pairs[r0 + 1][c0]         = { r0, c0 }
+            pairs[r0][c0 + 1]     = { r0 + 1, c0 + 1 };  pairs[r0 + 1][c0 + 1]     = { r0, c0 + 1 }
         end
-        shuffle(cells)
-
-        -- Greedy placement: for each unoccupied cell, pick an unoccupied neighbour
-        local dirs = { {0,1},{1,0},{0,-1},{-1,0} }
-        for _, cell in ipairs(cells) do
-            local r, c = cell[1], cell[2]
-            if not used[r][c] then
-                shuffle(dirs)
-                for _, d in ipairs(dirs) do
-                    local nr, nc = r + d[1], c + d[2]
-                    if nr >= 1 and nr <= n and nc >= 1 and nc <= n and not used[nr][nc] then
-                        -- Place domino
-                        pairs[r][c]   = { nr, nc }
-                        pairs[nr][nc] = { r, c }
-                        used[r][c]    = true
-                        used[nr][nc]  = true
-                        break
-                    end
-                end
-            end
+        return
+    end
+    local last = r0 + size - 1
+    if horiz then
+        for c = c0, last, 2 do
+            pairs[r0][c]     = { r0, c + 1 };     pairs[r0][c + 1]     = { r0, c }
+            pairs[last][c]   = { last, c + 1 };   pairs[last][c + 1]   = { last, c }
         end
-
-        -- Check all cells covered
-        local ok = true
-        for r = 1, n do
-            for c = 1, n do
-                if not used[r][c] then ok = false; break end
-            end
-            if not ok then break end
+        for r = r0 + 1, last - 1, 2 do
+            pairs[r][c0]     = { r + 1, c0 };     pairs[r + 1][c0]     = { r, c0 }
+            pairs[r][last]   = { r + 1, last };   pairs[r + 1][last]   = { r, last }
         end
-
-        if ok and countViolations(pairs, n) == 0 then
-            return pairs
+    else
+        for r = r0, last, 2 do
+            pairs[r][c0]     = { r + 1, c0 };     pairs[r + 1][c0]     = { r, c0 }
+            pairs[r][last]   = { r + 1, last };   pairs[r + 1][last]   = { r, last }
+        end
+        for c = c0 + 1, last - 1, 2 do
+            pairs[r0][c]     = { r0, c + 1 };     pairs[r0][c + 1]     = { r0, c }
+            pairs[last][c]   = { last, c + 1 };   pairs[last][c + 1]   = { last, c }
         end
     end
+    fillPinwheel(pairs, r0 + 1, c0 + 1, size - 2, horiz)
+end
 
-    -- Fallback: simple alternating horizontal tiling for 4x4
-    -- Just fill row by row with alternating H and V to avoid 2x2 issues
+-- Generate a valid domino tiling for an n x n grid with no tatami cross
+-- violations. pairs[r][c] = {partner_r, partner_c}
+local function generateTiling(n)
     local pairs = {}
     for r = 1, n do pairs[r] = {} end
-    -- Use column-major alternating to avoid all-horizontal 2x2
-    -- Even rows: horizontal pairs; odd rows: vertical pairs
-    if n == 4 then
-        -- Hardcoded valid 4x4 tiling (no 2x2 violation):
-        -- Row 1: H H (1,1)-(1,2), (1,3)-(1,4)
-        -- Row 2-3: V pairs: (2,1)-(3,1), (2,2)-(3,2), (2,3)-(3,3), (2,4)-(3,4)
-        -- Row 4: H H (4,1)-(4,2), (4,3)-(4,4)
-        -- Check: 2x2 at (1,1): TL=H, TR=H, BL=V, BR=V → mixed → ok
-        pairs[1][1] = {1,2}; pairs[1][2] = {1,1}
-        pairs[1][3] = {1,4}; pairs[1][4] = {1,3}
-        for c = 1, 4 do
-            pairs[2][c] = {3, c}
-            pairs[3][c] = {2, c}
-        end
-        pairs[4][1] = {4,2}; pairs[4][2] = {4,1}
-        pairs[4][3] = {4,4}; pairs[4][4] = {4,3}
-    else
-        -- 6x6: tile in 2-column bands alternating H/V
-        -- Band 1 (cols 1-2): vertical pairs for rows 1-6
-        -- Band 2 (cols 3-4): horizontal pairs for rows 1-6 (row by row)
-        -- Band 3 (cols 5-6): vertical pairs
-        for r = 1, n, 2 do
-            -- cols 1-2: vertical
-            pairs[r][1] = {r+1,1}; pairs[r+1][1] = {r,1}
-            pairs[r][2] = {r+1,2}; pairs[r+1][2] = {r,2}
-            -- cols 3-4: horizontal
-            pairs[r][3] = {r,4}; pairs[r][4] = {r,3}
-            pairs[r+1][3] = {r+1,4}; pairs[r+1][4] = {r+1,3}
-            -- cols 5-6: vertical
-            pairs[r][5] = {r+1,5}; pairs[r+1][5] = {r,5}
-            pairs[r][6] = {r+1,6}; pairs[r+1][6] = {r,6}
-        end
-    end
+    fillPinwheel(pairs, 1, 1, n, math.random(2) == 1)
     return pairs
 end
 
