@@ -130,3 +130,29 @@ describe("TatamiBoard", function()
         end)
     end)
 end)
+
+-- Selecting a given cell and tapping a neighbour used to overwrite the given
+-- cell's pair, breaking a fixed clue domino (and leaving its partner pointing
+-- at a cell that no longer pointed back).
+describe("TatamiBoard given dominoes", function()
+    it("cannot be re-paired by tapping a given cell then a neighbour", function()
+        local Board = require("board")
+        for seed = 1, 20 do
+            math.randomseed(seed)
+            local b = Board:new{ n = 4 }
+            b:generate("easy")
+            for r = 1, 4 do for c = 1, 4 do if b.given[r][c] then
+                for _, d in ipairs({ {0, 1}, {1, 0}, {0, -1}, {-1, 0} }) do
+                    local r2, c2 = r + d[1], c + d[2]
+                    if r2 >= 1 and r2 <= 4 and c2 >= 1 and c2 <= 4 and not b.given[r2][c2] then
+                        local before = { b.user_pairs[r][c][1], b.user_pairs[r][c][2] }
+                        b.selected = nil
+                        b:tapCell(r, c)
+                        b:tapCell(r2, c2)
+                        assert.same(before, { b.user_pairs[r][c][1], b.user_pairs[r][c][2] })
+                    end
+                end
+            end end end
+        end
+    end)
+end)

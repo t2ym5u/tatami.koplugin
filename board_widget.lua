@@ -40,26 +40,27 @@ function TatamiBoardWidget:onCellTap(row, col)
 end
 
 -- ---------------------------------------------------------------------------
--- Helper: draw a domino connection line between two adjacent cells
--- The line is drawn along the shared edge (centred), inset slightly.
+-- Helper: draw a domino as a bar joining the centres of its two cells.
+-- (It used to be a bar along their shared edge, which reads as a wall
+-- *between* the cells -- the opposite of what a domino is.)
 -- ---------------------------------------------------------------------------
 
-local function drawDominoEdge(bb, x1, y1, x2, y2, cell, thickness, color)
-    local inset = math.max(2, math.floor(cell * 0.15))
+local function drawDomino(bb, x1, y1, x2, y2, cell, thickness, color)
+    local half = math.floor(cell / 2)
+    local cx1, cy1 = x1 + half, y1 + half
+    local cx2, cy2 = x2 + half, y2 + half
+    local t2 = math.floor(thickness / 2)
     if y1 == y2 then
-        -- Horizontal domino: shared vertical edge between (r,c) and (r,c±1)
-        local ex = math.floor((x1 + x2 + cell) / 2) -- shared edge x
-        -- Draw a vertical line segment at shared edge
-        local ey1 = math.min(y1, y2) + inset
-        local ey2 = math.min(y1, y2) + math.ceil(cell) - inset
-        drawLine(bb, ex - math.floor(thickness / 2), ey1, thickness, ey2 - ey1, color)
+        local lx = math.min(cx1, cx2)
+        drawLine(bb, lx, cy1 - t2, math.abs(cx2 - cx1), thickness, color)
     else
-        -- Vertical domino: shared horizontal edge between (r,c) and (r±1,c)
-        local ey = math.floor((y1 + y2 + cell) / 2)
-        local ex1 = math.min(x1, x2) + inset
-        local ex2 = math.min(x1, x2) + math.ceil(cell) - inset
-        drawLine(bb, ex1, ey - math.floor(thickness / 2), ex2 - ex1, thickness, color)
+        local ly = math.min(cy1, cy2)
+        drawLine(bb, cx1 - t2, ly, thickness, math.abs(cy2 - cy1), color)
     end
+    -- A dot on each cell end, so the bar reads as a joined pair.
+    local dot_r = math.max(thickness, math.floor(cell * 0.12))
+    bb:paintCircle(cx1, cy1, dot_r, color)
+    bb:paintCircle(cx2, cy2, dot_r, color)
 end
 
 -- ---------------------------------------------------------------------------
@@ -92,13 +93,16 @@ function TatamiBoardWidget:paintTo(bb, x, y)
 
     for i = 0, n do
         local lw = (i == 0 or i == n) and thick or thin
-        drawLine(bb, x + math.floor(i * cell), y, lw, self.dimen.h, C_LINE)
-        drawLine(bb, x, y + math.floor(i * cell), self.dimen.w, lw, C_LINE)
+        -- The closing line sits inside the widget: drawn at i * cell it
+        -- would spill lw - 1 pixels past the right and bottom edges.
+        local off = (i == n) and (self.dimen.w - lw) or math.floor(i * cell)
+        drawLine(bb, x + off, y, lw, self.dimen.h, C_LINE)
+        drawLine(bb, x, y + off, self.dimen.w, lw, C_LINE)
     end
 
     -- Domino connections
-    local given_thick = math.max(4, math.floor(cell * 0.15))
-    local user_thick  = math.max(2, math.floor(cell * 0.08))
+    local given_thick = math.max(4, math.floor(cell * 0.12))
+    local user_thick  = math.max(3, math.floor(cell * 0.08))
     local seen = {}
     for r = 1, n do seen[r] = {} end
 
@@ -118,7 +122,7 @@ function TatamiBoardWidget:paintTo(bb, x, y)
                         local is_given = board.given[r][c] and board.given[r2][c2]
                         local color    = is_given and C_GIVEN_DOM or C_USER_DOM
                         local thickness = is_given and given_thick or user_thick
-                        drawDominoEdge(bb, cx1, cy1, cx2, cy2, cell, thickness, color)
+                        drawDomino(bb, cx1, cy1, cx2, cy2, cell, thickness, color)
                     end
                 end
             end

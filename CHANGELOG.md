@@ -6,6 +6,31 @@ Reconstructed from this repository's git history: each release lists the
 feature and fix commits it carried. Version bumps, screenshot additions
 and CI syncs are left out.
 
+## [1.2.0] - 2026-10-30
+
+### Changed
+- Redesigned play screen: the board is larger, filling the room the controls
+  leave, with a full-width action bar under the status line and a single
+  frame around the board.
+- A domino is drawn as a bar joining the centres of its two cells, with a dot
+  on each end. It used to be a bar along their shared edge, which read as a
+  wall between the cells, the opposite of a domino.
+- The rules describe this game. They used to describe a different puzzle
+  (numbers 1 to N, 1×3 dominoes); they now explain the cross-joint rule and
+  how to join, move and remove dominoes.
+- The status line reads "6×6 · Medium · Dominoes: 4/18" and wraps in
+  landscape instead of being cut off. The selected cell is shaded on the
+  board, so the status no longer spells out "tap adjacent cell to connect".
+- The title-bar menu shows "Difficulty: …" (was "Diff: …"), like every other
+  game.
+- Once the puzzle is solved (or revealed), the action bar shows "New game" in
+  place of Undo/Clear/Reveal, so the next round no longer needs the menu.
+
+### Fixed
+- A given domino could be overwritten: selecting one of its cells and tapping
+  a neighbour re-paired it, breaking the clue.
+- The grid's right and bottom border lines were drawn past the board's edge.
+
 ## [1.1.15] - 2026-10-07
 
 ### Fixed
