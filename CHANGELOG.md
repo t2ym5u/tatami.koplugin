@@ -6,6 +6,13 @@ Reconstructed from this repository's git history: each release lists the
 feature and fix commits it carried. Version bumps, screenshot additions
 and CI syncs are left out.
 
+## [1.3.0] - 2026-10-30
+
+### Added
+- "Daily Challenge" in the menu, right after "New game": today's puzzle at
+  your size and difficulty, the same grid for everyone playing it today.
+  Needs game-common 1.7.0.
+
 ## [1.2.0] - 2026-10-30
 
 ### Changed
