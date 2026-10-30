@@ -205,7 +205,10 @@ function TatamiBoard:tapCell(r, c)
     -- Check adjacency
     local dr = math.abs(r - sr)
     local dc = math.abs(c - sc)
-    if (dr == 1 and dc == 0) or (dr == 0 and dc == 1) then
+    -- A given domino is fixed: joining one of its cells to a neighbour would
+    -- overwrite its pair and leave the partner pointing at a broken domino.
+    if ((dr == 1 and dc == 0) or (dr == 0 and dc == 1))
+            and not self.given[sr][sc] and not self.given[r][c] then
         -- Adjacent: connect or disconnect
         local existing_r = self.user_pairs[r][c]
         local existing_s = self.user_pairs[sr][sc]

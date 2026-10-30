@@ -7,8 +7,6 @@ local function lrequire(name)
     return package.loaded[key]
 end
 
-local ButtonTable     = require("ui/widget/buttontable")
-local Device          = require("device")
 local FrameContainer  = require("ui/widget/container/framecontainer")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
@@ -24,32 +22,30 @@ local MenuHelper          = require("menu_helper")
 local TatamiBoard         = lrequire("board")
 local TatamiBoardWidget   = lrequire("board_widget")
 
-local DeviceScreen = Device.screen
-
 local GAME_RULES_EN = _([[
 Tatami — Rules
 
-Fill the grid with numbers so that every row and every column contains each number from 1 to N exactly once.
+Cover the whole grid with dominoes: pair every cell with one orthogonally adjacent cell.
 
-Domino rule:
-• The grid is divided into 1×2 and 1×3 dominoes.
-• Each domino may not contain two identical numbers.
-• No two dominoes of the same size and orientation may be directly adjacent (like tatami mats — they must not form a "T" or "+" joint in the same direction).
+Rules:
+• Every cell belongs to exactly one domino.
+• No four dominoes may meet corner-to-corner at a single point — the "cross" joint that real tatami mat floors avoid.
+• Dominoes drawn in thick black are given clues and cannot be changed.
 
-Given numbers are fixed clues. Tap a cell and select a digit to fill it in.
+Tap a cell to select it, then tap an adjacent cell to join them into a domino. Join a cell to a different neighbour to move its domino; select one half of a domino and tap the other half to remove it. Tap the selected cell again to deselect it.
 ]])
 
 local GAME_RULES_FR = [[
 Tatami — Règles
 
-Remplissez la grille avec les chiffres de 1 à N de sorte que chaque ligne et chaque colonne contienne chaque chiffre exactement une fois.
+Couvrez toute la grille de dominos : associez chaque case à une case orthogonalement adjacente.
 
-Règle des dominos :
-• La grille est divisée en dominos de 1×2 et 1×3.
-• Un domino ne peut pas contenir deux chiffres identiques.
-• Deux dominos de même taille et même orientation ne peuvent pas être directement adjacents (comme de vraies nattes tatami — ils ne doivent pas former un joint en "T" ou "+" dans la même direction).
+Règles :
+• Chaque case appartient à exactement un domino.
+• Quatre dominos ne peuvent pas se rejoindre par leurs coins en un même point — le joint « en croix » qu'évitent les vrais sols en tatamis.
+• Les dominos tracés en noir épais sont des indices donnés et ne peuvent pas être modifiés.
 
-Les chiffres donnés sont des indices fixes. Appuyez sur une case et choisissez un chiffre pour le placer.
+Appuyez sur une case pour la sélectionner, puis sur une case adjacente pour les réunir en un domino. Reliez une case à un autre voisin pour déplacer son domino ; sélectionnez une moitié d'un domino puis appuyez sur l'autre moitié pour le retirer. Appuyez à nouveau sur la case sélectionnée pour la désélectionner.
 ]]
 
 local TatamiScreen = ScreenBase:extend{}
@@ -69,27 +65,7 @@ function TatamiScreen:serializeState()
 end
 
 function TatamiScreen:buildLayout()
-    local sw           = DeviceScreen:getWidth()
     local is_landscape = self:isLandscape()
-
-    self.board_widget = TatamiBoardWidget:new{
-        board        = self.board,
-        onCellAction = function(r, c) self:onCellAction(r, c) end,
-    }
-
-    local board_frame = FrameContainer:new{
-        padding = Size.padding.large,
-        margin  = Size.margin.default,
-        self.board_widget,
-    }
-
-    local board_frame_size  = self.board_widget.size + (Size.padding.large + Size.margin.default) * 2
-    local right_panel_width = sw - board_frame_size - Size.span.horizontal_default
-    local button_width = is_landscape
-        and math.max(right_panel_width - Size.span.horizontal_default, 100)
-        or  math.floor(sw * 0.9)
-
-    self.status_text:setMaxWidth(is_landscape and button_width or board_frame_size)
 
     local title_bar = self:buildTitleBar(_("Tatami"), function()
         return {
@@ -100,38 +76,47 @@ function TatamiScreen:buildLayout()
         }
     end)
 
-    local bottom_buttons = ButtonTable:new{
-        shrink_unneeded_width = true,
-        width   = button_width,
-        buttons = {{
-            { text = _("Undo"),   callback = function() self:onUndo() end },
-            { text = _("Clear"),  callback = function() self:onClear() end },
-            { text = _("Reveal"), callback = function() self:onReveal() end },
-        }},
+    -- Controls first: the board is sized from whatever room they leave.
+    self.status_text:setMaxWidth(self:getControlsWidth())
+    local action_bar = self:buildActionBar({
+        { text = _("Undo"),   callback = function() self:onUndo() end },
+        { text = _("Clear"),  callback = function() self:onClear() end },
+        { text = _("Reveal"), callback = function() self:onReveal() end },
+    })
+    local controls = VerticalGroup:new{
+        align = "center",
+        self.status_text,
+        VerticalSpan:new{ width = Size.span.vertical_large },
+        action_bar,
+    }
+
+    -- The widget draws its own thick outer border, so the frame only pads.
+    local frame_pad   = Size.padding.large
+    local frame_extra = 2 * frame_pad
+    local budget_w, budget_h = self:getBoardBudget(title_bar, controls)
+    self.board_widget = TatamiBoardWidget:new{
+        board        = self.board,
+        max_size     = math.min(budget_w, budget_h) - frame_extra,
+        onCellAction = function(r, c) self:onCellAction(r, c) end,
+    }
+    local board_frame = FrameContainer:new{
+        padding    = frame_pad,
+        margin     = 0,
+        bordersize = 0,
+        self.board_widget,
     }
 
     if is_landscape then
-        local right_panel = VerticalGroup:new{
-            align = "center",
-            self.status_text,
-            VerticalSpan:new{ width = Size.span.vertical_large },
-            bottom_buttons,
-        }
         local content = HorizontalGroup:new{
-            align  = "center",
+            align = "center",
             board_frame,
-            HorizontalSpan:new{ width = Size.span.horizontal_default },
-            right_panel,
+            HorizontalSpan:new{ width = self:getGutter() },
+            controls,
         }
         self:buildLandscapeLayout(title_bar, content)
     else
-        local content = VerticalGroup:new{
-            align = "center",
-            board_frame,
-            VerticalSpan:new{ width = Size.span.vertical_large },
-            self.status_text,
-        }
-        self:buildPortraitLayout(title_bar, content, bottom_buttons)
+        self:buildPortraitLayout(title_bar, board_frame,
+            VerticalGroup:new{ align = "center", controls, VerticalSpan:new{ width = self:getGutter() } })
     end
     self:updateStatus()
 end
@@ -146,12 +131,14 @@ function TatamiScreen:onCellAction(r, c)
         self:updateStatus()
         self.plugin:saveState(self.board:serialize())
     elseif result == "selected" then
-        self:updateStatus(T(_("Selected (%1,%2) — tap adjacent cell to connect."), r, c))
+        -- The selection is shaded on the board; how to join it is in the rules.
+        self:updateStatus()
     elseif result == "deselected" then
         self:updateStatus()
     elseif result == "won" then
         self:updateStatus(_("Congratulations! Puzzle solved!"))
     end
+    self:refreshActionBar()
 end
 
 function TatamiScreen:onUndo()
@@ -159,6 +146,7 @@ function TatamiScreen:onUndo()
         self.board_widget:refresh()
         self:updateStatus()
         self.plugin:saveState(self.board:serialize())
+        self:refreshActionBar()
     end
 end
 
@@ -167,6 +155,7 @@ function TatamiScreen:onClear()
     self.board_widget:refresh()
     self:updateStatus()
     self.plugin:saveState(self.board:serialize())
+    self:refreshActionBar()
 end
 
 function TatamiScreen:onReveal()
@@ -174,6 +163,11 @@ function TatamiScreen:onReveal()
     self.board_widget:refresh()
     self:updateStatus(_("Solution revealed."))
     self.plugin:saveState(self.board:serialize())
+    self:refreshActionBar()
+end
+
+function TatamiScreen:isRoundOver()
+    return self.board.won
 end
 
 function TatamiScreen:onNewGame()
@@ -192,7 +186,7 @@ function TatamiScreen:openSizeMenu()
         sizes[#sizes + 1] = { id = sz, text = sz .. "\xC3\x97" .. sz }
     end
     MenuHelper.openSizeMenu{
-        title     = _("Select grid size"),
+        title     = _("Select size"),
         sizes     = sizes,
         current   = self.plugin:getSetting("grid_n", TatamiBoard.DEFAULT_N),
         parent    = self,
@@ -231,8 +225,8 @@ function TatamiScreen:updateStatus(msg)
         local n      = self.board.n
         local diff   = self.plugin:getSetting("difficulty", "easy")
         local label  = MenuHelper.DIFFICULTY_LABELS[diff] or diff
-        status = T(_("%1\xC3\x97%2 \xC2\xB7 %3 \xC2\xB7 Dominoes: %4/%5"),
-            n, n, label, placed, total)
+        status = self:joinStatus(
+            T("%1×%1", n), label, T(_("Dominoes: %1/%2"), placed, total))
     end
     ScreenBase.updateStatus(self, status)
 end
@@ -245,7 +239,7 @@ end
 function TatamiScreen:getDiffButtonText()
     local diff  = self.plugin:getSetting("difficulty", "easy")
     local label = MenuHelper.DIFFICULTY_LABELS[diff] or diff
-    return T(_("Diff: %1"), label)
+    return T(_("Difficulty: %1"), label)
 end
 
 return TatamiScreen
