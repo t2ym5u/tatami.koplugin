@@ -6,6 +6,14 @@ Reconstructed from this repository's git history: each release lists the
 feature and fix commits it carried. Version bumps, screenshot additions
 and CI syncs are left out.
 
+## [1.4.0] - 2026-11-04
+
+### Changed
+- New game and opening the game each build one puzzle instead of two: the
+  board used to generate a puzzle on creation that the screen then replaced
+  (or that a saved game overwrote). Today's Daily Challenge grid is a
+  different one than with 1.3.3.
+
 ## [1.3.3] - 2026-11-03
 
 ### Changed
