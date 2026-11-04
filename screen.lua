@@ -53,7 +53,7 @@ local TatamiScreen = ScreenBase:extend{}
 function TatamiScreen:init()
     local state = self.plugin:loadState()
     local n     = self.plugin:getSetting("grid_n", TatamiBoard.DEFAULT_N)
-    self.board  = TatamiBoard:new{ n = n }
+    self.board  = TatamiBoard:new{ n = n, empty = true }
     if not self.board:load(state) then
         self.board:generate(self.plugin:getSetting("difficulty", "easy"))
     end
@@ -174,7 +174,7 @@ end
 function TatamiScreen:onNewGame()
     local diff = self.plugin:getSetting("difficulty", "easy")
     local n    = self.plugin:getSetting("grid_n", TatamiBoard.DEFAULT_N)
-    self.board = TatamiBoard:new{ n = n }
+    self.board = TatamiBoard:new{ n = n, empty = true }
     self.board:generate(diff)
     self.plugin:saveState(self.board:serialize())
     self:buildLayout()

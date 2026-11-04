@@ -155,4 +155,15 @@ describe("TatamiBoard given dominoes", function()
             end end end
         end
     end)
+
+    describe("new{ empty = true }", function()
+        it("builds no puzzle, and load fills it from a save", function()
+            local Board = require("board")
+            local saved = Board:new{ n = 6 }:serialize()
+            local b = Board:new{ n = 6, empty = true }
+            assert.is_nil(b.sol_pairs)
+            assert.is_true(b:load(saved))
+            assert.are.same(saved, b:serialize())
+        end)
+    end)
 end)
