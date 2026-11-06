@@ -6,6 +6,32 @@ Reconstructed from this repository's git history: each release lists the
 feature and fix commits it carried. Version bumps, screenshot additions
 and CI syncs are left out.
 
+## [2.0.0] - 2026-11-05
+
+A major version: Tatami is now a different game. Saves and the 4×4 size
+from 1.x do not carry over.
+
+### Changed
+- Tatami is now the real Tatami number puzzle instead of a domino tiling.
+  The grid is cut into straight mats N cells long; every mat holds each
+  digit 1..N once, every row and column holds each digit equally often,
+  and equal digits never touch by a side. The old game had only two
+  possible tilings per grid size, so every puzzle looked alike, and its
+  Hard level could only be finished by trial and error.
+- Sizes are 6×6 and 9×9 (digits 1–3) and 8×8 (digits 1–4). A 4×4 size
+  saved by 1.x falls back to 6×6.
+- Every puzzle has exactly one solution and is solved by logic alone.
+  Easy needs only the basic deductions; Medium also needs counting the
+  mats that cross a row or column; Hard shows fewer digits and needs more
+  of that counting. Puzzles take at most a few hundredths of a second to
+  build on a computer and show a progress bar when they take longer.
+- Digits are entered from a number pad, with pencil-mark notes, Erase,
+  Check, Hint and Undo, like the other number puzzles. The win is checked
+  against the rules, not against a stored answer.
+- Reveal moved to the ☰ menu.
+- A saved 1.x game is not loaded: a new puzzle starts instead.
+- Today's Daily Challenge grid is a new one.
+
 ## [1.4.2] - 2026-11-04
 
 ### Fixed

@@ -1,5 +1,5 @@
 return {
-    ["Dominoes: %1/%2"] = { fr = "Dominos : %1/%2", es = "Dominós: %1/%2", de = "Dominosteine: %1/%2" },
-    ["Fill the grid with 1x2 dominoes"] = { fr = "Remplissez la grille avec des dominos 1x2", es = "Rellena la cuadrícula con dominós 1x2", de = "Fülle das Raster mit 1x2-Dominosteinen" },
+    ["Empty: %1"] = { fr = "Vides : %1", es = "Vacías: %1", de = "Leer: %1" },
+    ["Fill the mats with digits: balanced rows and columns, no equal neighbours"] = { fr = "Remplissez les tatamis de chiffres : lignes et colonnes équilibrées, pas de voisins égaux", es = "Rellena los tatamis con cifras: filas y columnas equilibradas, sin vecinos iguales", de = "Fülle die Matten mit Ziffern: ausgeglichene Zeilen und Spalten, keine gleichen Nachbarn" },
     ["Tatami"] = { fr = "Tatami", es = "Tatami", de = "Tatami" },
 }
