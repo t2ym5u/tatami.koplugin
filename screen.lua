@@ -158,13 +158,13 @@ end
 
 function TatamiScreen:_saveAndRefresh(msg)
     self.plugin:saveState(self.board:serialize())
-    self.board_widget:refresh()
+    self.board_widget:refresh(self)
     self:updateStatus(msg)
 end
 
 function TatamiScreen:onCellTap(r, c)
     self.board:setSelection(r, c)
-    self.board_widget:refresh()
+    self.board_widget:refresh(self)
     self:updateStatus()
 end
 
@@ -199,14 +199,14 @@ end
 function TatamiScreen:onErase()
     local sel = self.board.selected
     if not sel or self.board.won then
-        self.board_widget:refresh()
+        self.board_widget:refresh(self)
         return
     end
     local ok, err = self.board:clearCell(sel[1], sel[2])
     if ok then
         self:_saveAndRefresh()
     else
-        self.board_widget:refresh()
+        self.board_widget:refresh(self)
         if err == "given" then self:updateStatus(_("Cannot edit a given cell.")) end
     end
 end
@@ -217,7 +217,7 @@ end
 
 function TatamiScreen:onCheck()
     local wrong, empty = self.board:check()
-    self.board_widget:refresh()
+    self.board_widget:refresh(self)
     if self.board.won then
         self:updateStatus()
     elseif wrong > 0 then

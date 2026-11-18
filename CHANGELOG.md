@@ -6,6 +6,11 @@ Reconstructed from this repository's git history: each release lists the
 feature and fix commits it carried. Version bumps, screenshot additions
 and CI syncs are left out.
 
+## [2.0.2] - 2026-11-18
+
+### Fixed
+- A long press on an empty cell shows the selection at once.
+
 ## [2.0.1] - 2026-11-12
 
 ### Changed
