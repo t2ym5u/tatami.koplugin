@@ -6,6 +6,12 @@ Reconstructed from this repository's git history: each release lists the
 feature and fix commits it carried. Version bumps, screenshot additions
 and CI syncs are left out.
 
+## [2.0.3] - 2026-11-18
+
+### Changed
+- Picks up game-common 1.17.0, which now redraws the board through the
+  game screen (the fix of 2.0.2 moves there; nothing changes on screen).
+
 ## [2.0.2] - 2026-11-18
 
 ### Fixed
